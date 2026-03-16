@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퇴사 일상 루틴 트래커</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0e10;--surface:#1a1a1f;--surface2:#22222a;--border:#2e2e38;--text:#e8e8f0;--text-dim:#6b6b7e;--green:#4ade80;--yellow:#fbbf24;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--orange:#fb923c;--teal:#2dd4bf;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;padding-bottom:60px;}
+header{position:sticky;top:0;z-index:100;background:rgba(14,14,16,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+.header-left h1{font-size:15px;font-weight:700;}
+.header-left p{font-size:10px;color:var(--text-dim);margin-top:2px;font-family:'DM Mono',monospace;}
+.month-nav{display:flex;align-items:center;gap:10px;}
+.month-nav button{background:var(--surface2);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.month-nav button:hover{background:var(--border);}
+.month-nav span{font-size:12px;font-weight:500;font-family:'DM Mono',monospace;min-width:75px;text-align:center;}
+.stats-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;gap:20px;overflow-x:auto;}
+.stat-item{display:flex;flex-direction:column;gap:2px;white-space:nowrap;}
+.stat-item .label{font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.5px;}
+.stat-item .value{font-size:17px;font-weight:700;font-family:'DM Mono',monospace;}
+.filter-bar{padding:12px 20px;display:flex;gap:7px;overflow-x:auto;border-bottom:1px solid var(--border);}
+.filter-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 11px;border-radius:20px;font-size:11px;cursor:pointer;white-space:nowrap;transition:.15s;font-family:'Noto Sans KR',sans-serif;}
+.filter-btn.active,.filter-btn:hover{color:var(--text);border-color:var(--green);background:rgba(74,222,128,.08);}
+.section-header{padding:18px 20px 4px;font-size:10px;font-weight:500;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:8px;}
+.section-header::after{content:'';flex:1;height:1px;background:var(--border);}
+.cat-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.habits-grid{padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+.habit-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px 11px;cursor:default;transition:.15s;position:relative;overflow:hidden;}
+.habit-card:hover{border-color:rgba(74,222,128,.25);box-shadow:0 3px 16px rgba(0,0,0,.4);}
+.accent{position:absolute;top:0;left:0;width:3px;height:100%;border-radius:11px 0 0 11px;}
+.habit-card .name{font-size:11.5px;font-weight:500;margin-bottom:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.habit-card .stats-row{display:flex;justify-content:space-between;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:10px;}
+.habit-card .pct{color:var(--green);font-weight:500;}
+.habit-card .count{color:var(--text-dim);}
+.mini-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.day-dot{width:100%;aspect-ratio:1;border-radius:2px;background:var(--surface2);cursor:pointer;transition:.1s;}
+.day-dot.done{background:var(--green);}
+.day-dot.today{outline:2px solid rgba(74,222,128,.55);outline-offset:1px;}
+.day-dot.empty{background:transparent;pointer-events:none;}
+.day-dot.future{opacity:.35;cursor:default;}
+.day-dot:not(.empty):not(.future):hover{opacity:.65;transform:scale(1.15);}
+.loading{display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-dim);font-size:13px;font-family:'DM Mono',monospace;}
+.tooltip{position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:10px;font-family:'DM Mono',monospace;color:var(--text);pointer-events:none;z-index:999;opacity:0;transition:opacity .1s;white-space:nowrap;}
+.save-notice{position:fixed;bottom:18px;right:18px;background:var(--surface2);border:1px solid var(--green);color:var(--green);padding:7px 14px;border-radius:7px;font-size:11px;font-family:'DM Mono',monospace;opacity:0;transition:opacity .3s;pointer-events:none;}
+.save-notice.show{opacity:1;}
+.today-btn{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--green);padding:4px 12px;border-radius:18px;font-size:11px;cursor:pointer;transition:.15s;font-family:'Noto Sans KR',sans-serif;margin-right:6px;}
+.today-btn:hover{background:rgba(74,222,128,.2);}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <h1>🌟 퇴사 일상 루틴</h1>
+    <p id="dateStr"></p>
+  </div>
+  <div style="display:flex;align-items:center">
+    <button class="today-btn" onclick="goToday()">오늘</button>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">&#8249;</button>
+      <span id="monthLabel"></span>
+      <button onclick="changeMonth(1)">&#8250;</button>
+    </div>
+  </div>
+</header>
+<div class="stats-bar" id="statsBar"></div>
+<div class="filter-bar" id="filterBar"></div>
+<div id="habitsContainer"><div class="loading">불러오는 중...</div></div>
+<div class="tooltip" id="tooltip"></div>
+<div class="save-notice" id="saveNotice">저장됨 ✓</div>
+
+<script>
+const HABITS=[
+  {name:"🌞 5:20 기상",cat:"모닝루틴"},{name:"✅ 컨디션 체크",cat:"모닝루틴"},
+  {name:"🧘 모닝 스트레칭 15분",cat:"모닝루틴"},{name:"🏠 방정리",cat:"모닝루틴"},
+  {name:"🧑 머리정돈",cat:"모닝루틴"},{name:"🚽 화장실",cat:"모닝루틴"},
+  {name:"🫧 세안",cat:"모닝루틴"},{name:"🪥 반대손 양치",cat:"모닝루틴"},
+  {name:"👁 렌즈끼기+인공눈물",cat:"모닝루틴"},{name:"🐱 스킨케어",cat:"모닝루틴"},
+  {name:"💧 물 1잔",cat:"아침식사"},{name:"👩‍🍳 아침 요리&뒷정리",cat:"아침식사"},
+  {name:"🍚 엄마랑 아침식사",cat:"아침식사"},{name:"🐷 설거지",cat:"아침식사"},
+  {name:"💊 아침약 2개",cat:"아침식사"},{name:"🪥 양치",cat:"아침식사"},
+  {name:"⏰ 알람 맞추기",cat:"명상"},{name:"🔋 명상 및 남잠 1시간",cat:"명상"},
+  {name:"📓 모닝저널",cat:"명상"},
+  {name:"🌶 점심 준비",cat:"점심식사"},{name:"🍱 점심 식사",cat:"점심식사"},
+  {name:"💊 철맥",cat:"점심식사"},{name:"🐷 설거지",cat:"점심식사"},{name:"🪥 양치",cat:"점심식사"},
+  {name:"🧴 선크림 바르기",cat:"햇빛산책"},{name:"👕 옷 입기",cat:"햇빛산책"},
+  {name:"🚶 동네 20분 걷기&노래",cat:"햇빛산책"},
+  {name:"💻 기기 세팅 (오전)",cat:"할일"},{name:"📣 목표 수행 90분",cat:"할일"},
+  {name:"🧘 명상 15분 (1)",cat:"할일"},{name:"💻 기기 세팅 (오후)",cat:"할일"},
+  {name:"🧠 목표 집중 90분 (1)",cat:"할일"},{name:"🧘 명상 15분 (2)",cat:"할일"},
+  {name:"🏠 집안일",cat:"할일"},{name:"🧘 명상 15분 (3)",cat:"할일"},
+  {name:"🧠 목표 집중 90분 (2)",cat:"할일"},{name:"🧘 명상 15분 (4)",cat:"할일"},
+  {name:"🩱 운동복 입기",cat:"운동"},{name:"🏃 유산소 10분",cat:"운동"},
+  {name:"🏋 근력 운동 12분",cat:"운동"},{name:"🧘 폼롤러 스트레칭 10분",cat:"운동"},
+  {name:"🧘 호흡명상 5분",cat:"운동"},
+  {name:"🪮 브러싱",cat:"샤워"},{name:"👩 특별 샤워(열펌)",cat:"샤워"},
+  {name:"💎 일반샤워(열펌x)",cat:"샤워"},{name:"🧴 바디로션",cat:"샤워"},
+  {name:"🐱 스킨케어 (저녁)",cat:"샤워"},{name:"👩‍🔧 헤어케어&머리말리기",cat:"샤워"},
+  {name:"🧹 뒷정리",cat:"샤워"},
+  {name:"🌶 저녁 요리",cat:"저녁식사"},{name:"🍱 저녁 식사",cat:"저녁식사"},
+  {name:"💊 딕시",cat:"저녁식사"},{name:"🫧 설거지",cat:"저녁식사"},{name:"🪥 양치 (저녁)",cat:"저녁식사"},
+  {name:"🔒❤ 오빠랑 연락",cat:"휴식"},{name:"🥰 개인 휴식 시간",cat:"휴식"},
+  {name:"🛌 목표시간에 시작",cat:"나잇루틴"},{name:"👁 렌즈 빼기",cat:"나잇루틴"},
+  {name:"🧘 폼롤러 마사지 20분",cat:"나잇루틴"},{name:"✅ 내일 투두 정리",cat:"나잇루틴"},
+  {name:"✅ 딥나잇티 준비",cat:"나잇루틴"},{name:"📚 독서 20분",cat:"나잇루틴"},
+  {name:"🫖 멜라피스&딥나잇티",cat:"나잇루틴"},{name:"💤 수면 명상",cat:"나잇루틴"},
+];
+const CAT_COLORS={"모닝루틴":"#fbbf24","아침식사":"#fb923c","명상":"#a78bfa","점심식사":"#fb923c","햇빛산책":"#4ade80","할일":"#f87171","운동":"#2dd4bf","샤워":"#60a5fa","저녁식사":"#fb923c","휴식":"#f472b6","나잇루틴":"#8b8bff"};
+const CATS=Object.keys(CAT_COLORS);
+let viewYear,viewMonth,activeFilter="전체";
+const today=new Date();
+
+function skey(y,m){return"routine_"+y+"_"+String(m).padStart(2,"0");}
+async function loadData(y,m){
+  try{
+    if(window.storage){const r=await window.storage.get(skey(y,m));return r?JSON.parse(r.value):{};}
+    return JSON.parse(localStorage.getItem(skey(y,m))||"{}");
+  }catch(e){return{};}
+}
+async function saveData(y,m,data){
+  const v=JSON.stringify(data);
+  try{
+    if(window.storage)await window.storage.set(skey(y,m),v);
+    else localStorage.setItem(skey(y,m),v);
+  }catch(e){console.warn(e);}
+}
+function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
+function firstDayMon(y,m){return(new Date(y,m,1).getDay()+6)%7;}
+function isDone(data,hi,d){return!!data[hi+"_"+d];}
+function getDoneCount(data,hi){let c=0;for(let d=1;d<=daysInMonth(viewYear,viewMonth);d++)if(isDone(data,hi,d))c++;return c;}
+function getPct(data,hi){const days=daysInMonth(viewYear,viewMonth);const passed=(viewYear===today.getFullYear()&&viewMonth===today.getMonth())?today.getDate():days;return passed?Math.round(getDoneCount(data,hi)/passed*100):0;}
+async function toggleDay(hi,d){
+  const data=await loadData(viewYear,viewMonth);
+  data[hi+"_"+d]=!data[hi+"_"+d];
+  await saveData(viewYear,viewMonth,data);
+  showSaveNotice();await render();
+}
+function showTip(e,t){const el=document.getElementById("tooltip");el.textContent=t;el.style.opacity="1";el.style.left=(e.clientX+12)+"px";el.style.top=(e.clientY-28)+"px";}
+function hideTip(){document.getElementById("tooltip").style.opacity="0";}
+function showSaveNotice(){const el=document.getElementById("saveNotice");el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove("show");},1400);}
+function goToday(){viewYear=today.getFullYear();viewMonth=today.getMonth();render();}
+function changeMonth(d){viewMonth+=d;if(viewMonth<0){viewMonth=11;viewYear--;}if(viewMonth>11){viewMonth=0;viewYear++;}render();}
+function setFilter(c){activeFilter=c;render();}
+
+async function render(){
+  const MN=["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+  document.getElementById("monthLabel").textContent=viewYear+" "+MN[viewMonth];
+  const dn=["일","월","화","수","목","금","토"];const now=new Date();
+  document.getElementById("dateStr").textContent=now.getFullYear()+"."+String(now.getMonth()+1).padStart(2,"0")+"."+String(now.getDate()).padStart(2,"0")+" "+dn[now.getDay()];
+  const data=await loadData(viewYear,viewMonth);
+  const days=daysInMonth(viewYear,viewMonth);
+  const isCur=viewYear===today.getFullYear()&&viewMonth===today.getMonth();
+  const passed=isCur?today.getDate():days;
+  let totalDone=0;HABITS.forEach(function(_,i){totalDone+=getDoneCount(data,i);});
+  const pct=HABITS.length*passed>0?Math.round(totalDone/(HABITS.length*passed)*100):0;
+  let streak=0;if(isCur){for(let d=today.getDate();d>=1;d--){if(HABITS.every(function(_,i){return isDone(data,i,d);}))streak++;else break;}}
+  document.getElementById("statsBar").innerHTML='<div class="stat-item"><div class="label">달성률</div><div class="value" style="color:#4ade80">'+pct+'%</div></div><div class="stat-item"><div class="label">완료횟수</div><div class="value" style="color:#60a5fa">'+totalDone+'</div></div><div class="stat-item"><div class="label">연속완료</div><div class="value" style="color:#fbbf24">🔥'+streak+'</div></div><div class="stat-item"><div class="label">남은일수</div><div class="value" style="color:#a78bfa">'+(days-(isCur?today.getDate():0))+'일</div></div>';
+  document.getElementById("filterBar").innerHTML=["전체"].concat(CATS).map(function(c){return'<button class="filter-btn '+(activeFilter===c?"active":"")+'" onclick="setFilter(\''+c+'\')">'+c+'</button>';}).join("");
+  const firstDay=firstDayMon(viewYear,viewMonth);
+  const todayDate=today.getDate();
+  const filteredCats=activeFilter==="전체"?CATS:[activeFilter];
+  let html="";
+  filteredCats.forEach(function(cat){
+    const inCat=HABITS.map(function(h,i){return Object.assign({},h,{idx:i});}).filter(function(h){return h.cat===cat;});
+    if(!inCat.length)return;
+    html+='<div class="section-header"><span class="cat-dot" style="background:'+CAT_COLORS[cat]+'"></span>'+cat+'</div><div class="habits-grid">';
+    inCat.forEach(function(h){
+      const count=getDoneCount(data,h.idx);const p=getPct(data,h.idx);
+      let dots="";
+      for(let e=0;e<firstDay;e++)dots+='<div class="day-dot empty"></div>';
+      for(let d=1;d<=days;d++){
+        const done=isDone(data,h.idx,d);const isToday=isCur&&d===todayDate;const isFuture=isCur&&d>todayDate;
+        dots+='<div class="day-dot'+(done?" done":"")+(isToday?" today":"")+(isFuture&&!done?" future":"")+'" onmouseenter="showTip(event,\''+viewYear+"/"+(viewMonth+1)+"/"+d+'\')" onmouseleave="hideTip()" onclick="toggleDay('+h.idx+','+d+')"></div>';
+      }
+      html+='<div class="habit-card"><div class="accent" style="background:'+CAT_COLORS[cat]+'"></div><div class="name">'+h.name+'</div><div class="stats-row"><span class="pct">'+p+'%</span><span class="count">✓'+count+'</span></div><div class="mini-calendar">'+dots+'</div></div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById("habitsContainer").innerHTML=html;
+}
+viewYear=today.getFullYear();viewMonth=today.getMonth();render();
+</script>
+</body>
+</html>
